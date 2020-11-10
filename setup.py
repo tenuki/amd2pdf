@@ -5,17 +5,18 @@ from setuptools import setup, find_packages
 with open('README.md') as f:
     readme = f.read()
 
-with open('LICENSE.md') as f:
-    license = f.read()
 
 setup(
     name='amd2pdf',
-    version='0.1.0',
-    description='Another markdown to pdf conversion tool',
-    long_description=readme,
+    version='0.1.1',
+    description='Another markdown to pdf with TOC and page index support',
+    long_description='This is another markdown to pdf conversion tool. '
+                     'This includes TOC markdown tag support and the generated '
+                     'output is page indexed.',
     author='david weil',
     author_email='david.weil@endlesstruction.com.ar',
-    license=license,
+    license="GNU General Public License v3.0",
+    url='https://github.com/tenuki/amd2pdf',
     packages=find_packages(exclude=('tests', 'docs')),
         package_data={
             # If any package contains *.txt files, include them:
@@ -24,7 +25,6 @@ setup(
             # of the "mypkg" package, also:
             "amd2pdf": ["rsrc/*.css"],
         },
-    data_files=[('', ['amd2pdf/rsrc/style.css'])],
     install_requires=['doit', 'jinja2'],
     python_requires='>=3',
     entry_points={

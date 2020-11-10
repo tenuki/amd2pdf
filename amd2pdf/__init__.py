@@ -63,6 +63,7 @@ def main():
                 check_param('-c', '--css', 'css'),
                 check_param('-p', '--page', 'page'),
                 check_param('-t', '--title', 'title'),
+                check_param('-o', '--output', 'output_filename'),
             ]:
                 if f(idx, args, params):
                     skip = True

@@ -23,18 +23,22 @@ def GuessName(cmdline):
 
 class Config:
     def __init__(self, source, verbose=False, debug=False, css=None, page=None,
-                 title=None):
+                 title=None, output_filename=None):
         self.temp = tempfile.mkdtemp(prefix='md2pdf-')
         self.debug = debug
         self.verbose = verbose
         self.source = source
+        self.output_filename = output_filename
         self.params = {'css': css, 'page': page, 'title': title}
         self.defaults = {'css': default_style, 'page': 'A4',
                          'title':os.environ.get('TITLE', '')}
 
     @property
     def Final(self):
-        fname = self.source.split('.')[0]
+        if self.output_filename is None:
+            fname = self.source.split('.')[0] + '.pdf'
+        else:
+            fname = self.output_filename
         fullname = os.path.join(os.getcwd(), fname)
         if not os.path.isabs(fullname):
             raise Exception("shouldn't happend")
@@ -83,12 +87,12 @@ class Config:
         fullcmd += '' if not ignorExecErrors else '||echo errors ignored'
 
         if outputName is None:
-            outputName = taskname
+            outputName = taskname + '.' + ext
         if not os.path.isabs(outputName):
             outputName = os.path.join(self.TempDirName, outputName)
 
         return {'actions': [fullcmd],
-                'targets': [W(outputName + '.' + ext)],
+                'targets': [W(outputName)],
                 'file_dep': reduce_deps(deps),
                 'verbosity': verbosity if verbosity else self.Verbosity,
                 'clean': [clean_targets],
@@ -128,7 +132,8 @@ def gen_html2pdf():
     op_esc = lambda x: '"%s"'%x if x[0]!='"' else x
 
     defaults = {
-        ('footer', 'left'): 'amd2pdf',
+        ('header', 'left'): 'Made with amd2pdf',
+        ('footer', 'left'): 'https://github.com/tenuki/amd2pdf',
         ('header', 'right'): '(sample)',
         ('header', 'center'): '[title]',
         ('footer', 'center'): "[page] of [topage]",

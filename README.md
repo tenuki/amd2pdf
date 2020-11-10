@@ -86,3 +86,11 @@ Toc levels to include:
  makes ToC generator to include 2 and 3 headings in toc.
  
  Toc tag used in markdown is `[[TOC]]`.
+
+## Examples
+
+This same readme converted to pdf:
+
+ * [README.sample1.pdf](https://github.com/tenuki/amd2pdf/blob/main/README.sample1.pdf)
+ * [README.sample2.pdf](https://github.com/tenuki/amd2pdf/blob/main/README.sample2.pdf)
+ 

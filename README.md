@@ -17,7 +17,8 @@ Windows: install from https://blog.alivate.com.au/poppler-windows/
 
 ### Nodejs
 
-- remark-toc-stdin: `npm install -g remark-toc-stdin`
+ 1. You must have installed or installa `nodejs` for your platform
+ 1. remark-toc-stdin: `npm install -g remark-toc-stdin`
 
 
 ## Usage

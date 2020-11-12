@@ -106,7 +106,7 @@ class Config:
     def link_tasks(self, task_gen):
         prev = self.Initial
         for task in task_gen:
-            if not 'file_dep' in task:
+            if (not 'file_dep' in task) or (0==len(task['file_dep'])):
                 task['file_dep'] = reduce_deps([prev])
             yield task
             prev = task
@@ -153,18 +153,15 @@ def gen_html2pdf():
 
 
 def task_md2pdf(cfg):
-    #yield cfg.TaskGen('node remark-stdin.js')
     yield cfg.TaskGen("node -e \"require('remark-toc-stdin').main(()=>'"+TAG+"')\"",
                       taskname='toc')
-    wraphtml = cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
-                           taskname='wrap')
-    yield wraphtml
+    yield (wraphtml := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
+                           taskname='wrap'))
     yield cfg.TaskGen(gen_html2pdf(), ext='pdf', ignorExecErrors=True)
     yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image',
                       ext='xml')
-    xml2idx = cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
-                          taskname="xml2idx", ext='idx')
-    yield xml2idx
+    yield (xml2idx := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
+                          taskname="xml2idx", ext='idx'))
     yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.htmlpatch()" ' +
                       xml2idx['targets'][0], taskname="htmlpatch",
                       stdin=wraphtml)  # deps=[xml2idx, wraphtml]

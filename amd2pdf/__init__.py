@@ -16,7 +16,8 @@ def run(filename, **kw):
 
 
 def usage():
-    print("%s [-v] [-d] [-c/--css filename.css] [-p/--page PAGE-TYPE] [-t/--title title] input_filename.md" % sys.argv[0])
+    print("%s [-v] [-d] [-c/--css filename.css] [-p/--page PAGE-TYPE] "
+          "[-t/--title title] input_filename.md" % sys.argv[0])
     print(" -v: set verbose mode on")
     print(" -d: set debug mode on")
     print(" -t: set document title")

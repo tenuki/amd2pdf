@@ -106,7 +106,8 @@ class Config:
     def link_tasks(self, task_gen):
         prev = self.Initial
         for task in task_gen:
-            task['file_dep'] = reduce_deps([prev])
+            if not 'file_dep' in task:
+                task['file_dep'] = reduce_deps([prev])
             yield task
             prev = task
 
@@ -158,11 +159,6 @@ def task_md2pdf(cfg):
     wraphtml = cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
                            taskname='wrap')
     yield wraphtml
-    print()
-    print()
-    print("gen_html2pdf() : ", gen_html2pdf())
-    print()
-    print()
     yield cfg.TaskGen(gen_html2pdf(), ext='pdf', ignorExecErrors=True)
     yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image',
                       ext='xml')

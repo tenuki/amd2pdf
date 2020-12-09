@@ -2,6 +2,8 @@ import sys
 
 import doit
 
+from .cli import check_param, check_bool_param
+
 from .core import Config, task_md2pdf
 from .helpers import check_versions
 from .tasks import wrap, gettoc, htmlpatch
@@ -16,34 +18,21 @@ def run(filename, **kw):
 
 
 def usage():
-    print("%s [-v] [-d] [-c/--css filename.css] [-p/--page PAGE-TYPE] "
-          "[-t/--title title] input_filename.md" % sys.argv[0])
+    print("amd2pdf [-v] [-d] [-O] [-c/--css filename.css] "
+          "[-p/--page PAGE-TYPE] [-t/--title title] [-o/--output filename] "
+          "input_filename.md")
     print(" -v: set verbose mode on")
     print(" -d: set debug mode on")
-    print(" -t: set document title")
-    print(" filename.css: stylesheet to use, default: style.css")
-    print(" PAGE-TYPE: Default A4")
+    print(" -O: open output in browser")
+    print(" -t title: set document title")
+    print(" -o filename: set output filename")
+    print(" -c/--css filename.css: stylesheet to use, default: style.css")
+    print(" -p/--page PAGE-TYPE: Default A4")
     print("")
     print("Output will be: input_filename.pdf")
 
 
-def check_param(short, long, param):
-    def f(idx, args, params):
-        arg = args[idx]
-        if arg.lower() in (short, long):
-            try:
-                value = args[idx + 1]
-                params[param] = value
-                return True
-            except:
-                raise Exception("%s/%s requires a value."%(short, long))
-        return False
-    return f
-
-
 def main():
-    debug = False
-    verbose = False
     if len(sys.argv) >= 2:
         params = {}
         args = [arg for arg in sys.argv[1:]]
@@ -53,23 +42,20 @@ def main():
             if skip:
                 skip = False
                 continue
-            if arg == "-v":
-                verbose = True
-                continue
-            if arg == "-d":
-                debug = True
-                continue
-
             for f in [
+                check_bool_param('-O', '--autoopen', 'autoopen'),
+                check_bool_param('-v', '--verbose', 'verbose'),
+                check_bool_param('-d', '--debug', 'debug'),
                 check_param('-c', '--css', 'css'),
                 check_param('-p', '--page', 'page'),
                 check_param('-t', '--title', 'title'),
                 check_param('-o', '--output', 'output_filename'),
             ]:
-                if f(idx, args, params):
-                    skip = True
+                _break, _skip = f(idx, args, params)
+                if _break:
+                    skip = _skip
                     break
-            if skip:
+            if skip or _break:
                 continue
             unmatched.append(arg)
 
@@ -80,7 +66,7 @@ def main():
             usage()
             print("Unknown parameters:", unmatched[1:])
         else:
-            run(unmatched[0], verbose=verbose, debug=debug, **params)
+            run(unmatched[0], **params)
     else:
         usage()
 

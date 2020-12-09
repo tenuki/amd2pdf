@@ -1,4 +1,5 @@
 import fileinput
+import functools
 import json
 import os
 import re
@@ -73,24 +74,6 @@ hash_link_to_idx = lambda link: int(link.split('#',1)[1])
 def _cmp(x, y):
     return y - x
 
-def cmp_to_key(mycmp):
-    'Convert a cmp= function into a key= function'
-    class K:
-        def __init__(self, obj, *args):
-            self.obj = obj
-        def __lt__(self, other):
-            return mycmp(self.obj, other.obj) < 0
-        def __gt__(self, other):
-            return mycmp(self.obj, other.obj) > 0
-        def __eq__(self, other):
-            return mycmp(self.obj, other.obj) == 0
-        def __le__(self, other):
-            return mycmp(self.obj, other.obj) <= 0
-        def __ge__(self, other):
-            return mycmp(self.obj, other.obj) >= 0
-        def __ne__(self, other):
-            return mycmp(self.obj, other.obj) != 0
-    return K
 
 def gettoc():
     #print('type: %s  (%d)' % (type(data), len(data)), file=sys.stderr)
@@ -143,7 +126,7 @@ def gettoc():
 
     # now sort them
     cmpfunc = lambda x, y: _cmp(x[0],y[0]) if x[0]!=y[0] else _cmp(x[1],y[1])
-    found.sort(reverse=True, key=cmp_to_key(cmpfunc))
+    found.sort(reverse=True, key=functools.cmp_to_key(cmpfunc))
     print('-->', repr(found), file=sys.stderr)
     found = [y for x, y in found]
     print('-->', repr(found), file=sys.stderr)

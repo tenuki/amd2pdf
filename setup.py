@@ -8,7 +8,7 @@ with open('README.md') as f:
 
 setup(
     name='amd2pdf',
-    version='0.1.1',
+    version='0.1.2',
     description='Another markdown to pdf with TOC and page index support',
     long_description='This is another markdown to pdf conversion tool. '
                      'This includes TOC markdown tag support and the generated '

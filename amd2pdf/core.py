@@ -10,7 +10,7 @@ import tempfile
 
 from doit.task import clean_targets
 
-from .helpers import default_style, reduce_deps, ShouldWrap, isWin, W
+from .helpers import default_style, reduce_deps, ShouldWrap, isWin, W, mods_path
 from .tasks import TAG
 
 
@@ -93,7 +93,7 @@ class Config:
 
             DOIT_CONFIG = {
                 'action_string_formatting': 'both',
-                'dep_file': os.path.join(self.TempDirName, 'doit-db.json'),
+                'dep_file': os.path.join(self.TempDirName, 'amd2pdf-db.json'),
             }
             yield locals()
         finally:
@@ -184,8 +184,8 @@ def gen_html2pdf():
 
 def task_md2pdf(cfg):
     yield cfg.TaskGen(
-        "node -e \"require('remark-toc-stdin').main(()=>'" + TAG + "')\"",
-        taskname='toc')
+            'node %s "%s"' % (os.path.join(mods_path, 'md2pdf.js'), TAG),
+            taskname='toc')
     yield (wraphtml := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
                                    taskname='wrap'))
     yield cfg.TaskGen(gen_html2pdf(), ext='pdf', ignorExecErrors=True)

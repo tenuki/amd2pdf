@@ -17,9 +17,13 @@ Windows: install from https://blog.alivate.com.au/poppler-windows/
 
 ### Nodejs
 
- 1. You must have installed or installa `nodejs` for your platform
- 1. remark-toc-stdin: `npm install -g remark-toc-stdin@0.2.0` (or `npm
-  upgrade remark-toc-stdin`)
+You must have installed or installa `nodejs` for your platform with the 
+following modules (with the following minimal version) :
+
+ * markdown-it: 12.0.2
+ * markdown-it-anchor: 6.0.0
+ * markdown-it-table-of-contents: 0.5.1
+ * strip-bom: 4.0.0
 
 
 ## Usage

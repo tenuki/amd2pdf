@@ -8,7 +8,7 @@ with open('README.md') as f:
 
 setup(
     name='amd2pdf',
-    version='0.1.2',
+    version='0.1.3',
     description='Another markdown to pdf with TOC and page index support',
     long_description='This is another markdown to pdf conversion tool. '
                      'This includes TOC markdown tag support and the generated '
@@ -23,7 +23,7 @@ setup(
             #"": ["*.txt"],
             # And include any *.dat files found in the "data" subdirectory
             # of the "mypkg" package, also:
-            "amd2pdf": ["rsrc/*.css"],
+            "amd2pdf": ["rsrc/*.css", "*.js"],
         },
     install_requires=['doit', 'jinja2'],
     python_requires='>=3',

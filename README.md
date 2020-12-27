@@ -108,6 +108,52 @@ Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium dolor
      Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur ac mattis diam, sit amet fermentum ex. Cras elementum at urna ut interdum. Nullam at felis risus. Ut tortor turpis, porttitor et consectetur vel, varius eget purus. Sed dolor ipsum, vulputate nec est eget, dignissim sagittis metus. Nullam ut velit elit. Phasellus sit amet nisi eu sem sagittis vestibulum.
 
 
+## Pikchr diagrams!
+
+```pikchr
+line ; box "Hello," "World!"; arrow ; box "Hello," "World!"; arrow
+```
+
+or:
+
+```pikchr
+# Impossible trident pikchr script
+# https://en.wikipedia.org/wiki/Impossible_trident
+# pikchr script by Kees Nuyt, license Creative Commons BY-NC-SA 
+# https://creativecommons.org/licenses/by-nc-sa/4.0/
+
+scale = 1.0
+eh = 0.5cm
+ew = 0.2cm
+ed = 2 * eh
+er = 0.4cm
+lws = 4.0cm
+lwm = lws + er
+lwl = lwm + er
+
+ellipse height eh width ew
+L1: line width lwl from last ellipse.n
+line width lwm from last ellipse.s
+LV: line height eh down
+
+move right er down ed from last ellipse.n
+ellipse height eh width ew
+L3: line width lws right from last ellipse.n to LV.end then down eh right ew
+line width lwm right from last ellipse.s then to LV.start
+
+move right er down ed from last ellipse.n
+ellipse height eh width ew
+line width lwl right from last ellipse.n then to L1.end
+line width lwl right from last ellipse.s then up eh
+```
+
+## Syntax highlighting
+
+```python
+def main():
+    print("something")
+```
+
 
 This same readme converted to pdf:
 

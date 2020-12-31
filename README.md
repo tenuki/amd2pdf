@@ -154,6 +154,28 @@ def main():
     print("something")
 ```
 
+## Plantuml
+### standard image output
+```plantuml Sample
+class SimplePlantUMLPlugin {
+    + transform(syntaxTree: AST): AST
+}
+```
+
+### vectorial output
+```plantuml svg
+class SimplePlantUMLPlugin {
+    + transform(syntaxTree: AST): AST
+}
+```
+
+### text output
+```plantuml txt
+class SimplePlantUMLPlugin {
+    + transform(syntaxTree: AST): AST
+}
+```
+
 
 This same readme converted to pdf:
 

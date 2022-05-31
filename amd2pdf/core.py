@@ -1,17 +1,23 @@
 # -*- coding: utf-8 -*-
-import shutil
-from contextlib import contextmanager
-
-from . import helpers
-
 import os
+import shutil
 import sys
 import tempfile
+from contextlib import contextmanager
 
 from doit.task import clean_targets
 
-from .helpers import default_style, reduce_deps, ShouldWrap, isWin, W, mods_path
-from .tasks import TAG
+from .helpers import default_style, reduce_deps, ShouldWrap, isWin, W
+
+TARGET_REF = '%(targets)s'
+
+
+class Amd2pdfException(Exception):
+    pass
+
+
+class ExecError(Amd2pdfException):
+    pass
 
 
 def GuessName(cmdline):
@@ -24,9 +30,9 @@ def GuessName(cmdline):
 class Config:
     def __init__(self, source, verbose=False, debug=False, css=None, page=None,
                  title=None, output_filename=None, autoopen=False):
-        self.temp = tempfile.mkdtemp(prefix='md2pdf-')
+        self.temp_dir = tempfile.mkdtemp(prefix='md2pdf-')
         self.debug = debug
-        self.verbose = verbose
+        self.verbosity_level = 2 if verbose else 0
         self.source = source
         self.autoopen = autoopen
         self.output_filename = output_filename
@@ -42,7 +48,7 @@ class Config:
             fname = self.output_filename
         fullname = os.path.join(os.getcwd(), fname)
         if not os.path.isabs(fullname):
-            raise Exception("shouldn't happen")
+            raise ExecError("shouldn't happen")
         return fullname
 
     @property
@@ -50,7 +56,7 @@ class Config:
         source = self.source
         if ShouldWrap(source):
             handle, fullname = tempfile.mkstemp(prefix='src-md',
-                                                dir=self.TempDirName)
+                                                dir=self.temp_dir)
             with open(source, 'rb') as src:
                 data = src.read(4096)
                 while data:
@@ -60,23 +66,15 @@ class Config:
             source = fullname
         return {'targets': [source]}
 
-    @property
-    def Verbosity(self):
-        return 2 if self.verbose else 0
-
-    @property
-    def TempDirName(self):
-        return self.temp
-
     def _setup_env(self):
-        os.environ['TMP'] = os.environ['TEMP'] = self.TempDirName
+        os.environ['TMP'] = os.environ['TEMP'] = self.temp_dir
         for key, value in self.params.items():
             os.environ[key.upper()] = value if value else self.defaults.get(key)
 
     def link_tasks(self, task_gen):
         prev = self.Initial
         for task in task_gen:
-            if (not 'file_dep' in task) or ([] == task['file_dep']):
+            if ('file_dep' not in task) or ([] == task['file_dep']):
                 task['file_dep'] = reduce_deps([prev])
             yield task
             prev = task
@@ -85,19 +83,20 @@ class Config:
     def prepare(self, taskgen):
         self._setup_env()
         if self.debug:
-            print("Temporary files at:", self.TempDirName)
+            print("Temporary files at:", self.temp_dir)
         try:
+            # noinspection PyShadowingNames
             def task_md2pdf():
                 for x in self.link_tasks(taskgen(self)):
                     yield x
 
             DOIT_CONFIG = {'action_string_formatting': 'both',
-                           'dep_file': os.path.join(self.TempDirName,
+                           'dep_file': os.path.join(self.temp_dir,
                                                     'amd2pdf-db.json'), }
             yield locals()
         finally:
             if not self.debug:
-                shutil.rmtree(self.TempDirName)
+                shutil.rmtree(self.temp_dir)
 
     def TaskGen(self, *args, **kw):
         c = MyTask(*args, **kw)
@@ -114,7 +113,7 @@ class MyTask:
         self.stdin = stdin
         self.stdout = stdout
         self.ext = ext
-        self._verbosity = verbosity
+        self.verbose = verbosity
         self.ignorExecErrors = ignorExecErrors
         self.taskname = taskname if taskname else GuessName(cmdline)
         self.deps = deps if deps else []
@@ -130,10 +129,10 @@ class MyTask:
                    self.stdin['targets'][0] if self.stdin else '{dependencies}',
                    '|', cmdline]
         if self.stdout:
-            fullcmd.append('> %(targets)s')
+            fullcmd.append('> '+TARGET_REF)
         else:
-            if '%(targets)s' not in cmdline:
-                raise Exception("When using no stdout, targets must be in cmd!")
+            if TARGET_REF not in cmdline:
+                raise ExecError("When using no stdout, targets must be in cmd!")
         if self.ignorExecErrors:
             fullcmd.append('||echo errors ignored')
         return ' '.join(fullcmd)
@@ -142,27 +141,26 @@ class MyTask:
     def actions(self):
         actions = []
         cmd = self.fullcmd
-        if self._verbosity:
+        if self.verbose:
             actions.append(lambda: print('> ' + cmd, file=sys.stderr))
         actions.append(cmd)
         return actions
 
     def get(self, cfg):
-        self._verbosity = self._verbosity or cfg.Verbosity
-
+        verbose = self.verbose or cfg.verbosity_level
         if not os.path.isabs(self.outputName):
-            self.outputName = os.path.join(cfg.TempDirName, self.outputName)
-
+            self.outputName = os.path.join(cfg.temp_dir, self.outputName)
         return {'actions': self.actions, 'targets': [W(self.outputName)],
                 'file_dep': reduce_deps(self.deps),
-                'verbosity': self._verbosity, 'clean': [clean_targets],
+                'verbosity': verbose, 'clean': [clean_targets],
                 'name': self.taskname}
 
 
 def gen_html2pdf(fname):
     page_format = os.environ.get('PAGE', 'A4')
     margins = {'A4': {'T': '1in', 'L': '1in', 'R': '1in', 'B': '1in'}}
-    inch_to_mm = lambda x: (float(x)*25.4) if not x.endswith('in') else inch_to_mm(x[:-2])
+    inch_to_mm = lambda x: (float(x) * 25.4) if not x.endswith(
+        'in') else inch_to_mm(x[:-2])
 
     op_esc = lambda x: ('"%s"' % x) if not x.startswith('"') else x
     defaults = {('header', 'left'): 'Made with amd2pdf',
@@ -175,9 +173,9 @@ def gen_html2pdf(fname):
     opts = opts + ['-%s %s' % (margin, margins[page_format][margin]) for margin
                    in 'TLRB']
     opts = opts + ['--header-spacing %d' % int(
-                                 ((1.0 * inch_to_mm(margins[page_format]['T'])) / 3) + 0.5)]
+        ((1.0 * inch_to_mm(margins[page_format]['T'])) / 3) + 0.5)]
     opts = opts + ['--footer-spacing %d' % int(
-                                 ((1.0 * inch_to_mm(margins[page_format]['B'])) / 3) + 0.5)]
+        ((1.0 * inch_to_mm(margins[page_format]['B'])) / 3) + 0.5)]
     opts = opts + []
     opts = opts + ['--page-size %s' % page_format]
 
@@ -203,21 +201,24 @@ def task_md2pdf(cfg):
     yield cfg.TaskGen('python -m markdown -x toc', taskname='toc')
     if TOC:
         yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.toc_to_dummy()"',
-                      taskname='toc_to_dummy')
+                          taskname='toc_to_dummy')
     yield (wraphtml := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
                                    taskname='wrap'))
 
-    yield cfg.TaskGen(gen_html2pdf('%(targets)s'), ext='pdf', stdout=False,
+    yield cfg.TaskGen(gen_html2pdf(TARGET_REF), ext='pdf', stdout=False,
                       ignorExecErrors=True)
 
     if TOC:
-        yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image', ext='xml')
-        yield (xml2idx := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
-                               taskname="xml2idx", ext='idx'))
-        yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.htmlpatch()" ' + xml2idx['targets'][
-            0], taskname="htmlpatch", stdin=wraphtml)  # deps+=[wraphtml]
+        yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image',
+                          ext='xml')
+        yield (xml2idx := cfg.TaskGen(
+            'python -c "import amd2pdf;amd2pdf.gettoc()" -',
+            taskname="xml2idx", ext='idx'))
+        yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.htmlpatch()" ' +
+                          xml2idx['targets'][0], taskname="htmlpatch",
+                          stdin=wraphtml)  # perhaps we'll need:deps+=[wraphtml]
         yield cfg.TaskGen(gen_html2pdf('%(targets)s'), cfg.Final, stdout=False,
-                      taskname='html2pdf2', ext='pdf', ignorExecErrors=True)
+                          taskname='html2pdf2', ext='pdf', ignorExecErrors=True)
 
     if cfg.autoopen:
         yield cfg.TaskGen(

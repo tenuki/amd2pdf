@@ -91,10 +91,9 @@ class Config:
                 for x in self.link_tasks(taskgen(self)):
                     yield x
 
-            DOIT_CONFIG = {
-                'action_string_formatting': 'both',
-                'dep_file': os.path.join(self.TempDirName, 'amd2pdf-db.json'),
-            }
+            DOIT_CONFIG = {'action_string_formatting': 'both',
+                           'dep_file': os.path.join(self.TempDirName,
+                                                    'amd2pdf-db.json'), }
             yield locals()
         finally:
             if not self.debug:
@@ -110,8 +109,8 @@ TypeCmd = lambda: 'type' if isWin else 'cat'
 
 class MyTask:
     def __init__(self, cmdline, outputName=None, deps=None, taskname=None,
-                 ignorExecErrors=False, verbosity=False, stdout=True, stdin=None,
-                 ext='html'):
+                 ignorExecErrors=False, verbosity=False, stdout=True,
+                 stdin=None, ext='html'):
         self.stdin = stdin
         self.stdout = stdout
         self.ext = ext
@@ -120,7 +119,7 @@ class MyTask:
         self.taskname = taskname if taskname else GuessName(cmdline)
         self.deps = deps if deps else []
         self.cmdline = cmdline
-        self.outputName = outputName if outputName else self.taskname+'.'+ext
+        self.outputName = outputName if outputName else self.taskname + '.' + ext
 
     @property
     def fullcmd(self):
@@ -132,6 +131,9 @@ class MyTask:
                    '|', cmdline]
         if self.stdout:
             fullcmd.append('> %(targets)s')
+        else:
+            if '%(targets)s' not in cmdline:
+                raise Exception("When using no stdout, targets must be in cmd!")
         if self.ignorExecErrors:
             fullcmd.append('||echo errors ignored')
         return ' '.join(fullcmd)
@@ -141,7 +143,7 @@ class MyTask:
         actions = []
         cmd = self.fullcmd
         if self._verbosity:
-            actions.append( lambda:print('> '+cmd, file=sys.stderr) )
+            actions.append(lambda: print('> ' + cmd, file=sys.stderr))
         actions.append(cmd)
         return actions
 
@@ -151,27 +153,34 @@ class MyTask:
         if not os.path.isabs(self.outputName):
             self.outputName = os.path.join(cfg.TempDirName, self.outputName)
 
-        return {'actions': self.actions,
-                'targets': [W(self.outputName)],
+        return {'actions': self.actions, 'targets': [W(self.outputName)],
                 'file_dep': reduce_deps(self.deps),
-                'verbosity': self._verbosity,
-                'clean': [clean_targets],
+                'verbosity': self._verbosity, 'clean': [clean_targets],
                 'name': self.taskname}
 
 
-def gen_html2pdf():
-    op_esc = lambda x: '"%s"' % x if x[0] != '"' else x
+def gen_html2pdf(fname):
+    page_format = os.environ.get('PAGE', 'A4')
+    margins = {'A4': {'T': '1in', 'L': '1in', 'R': '1in', 'B': '1in'}}
+    inch_to_mm = lambda x: (float(x)*25.4) if not x.endswith('in') else inch_to_mm(x[:-2])
 
-    defaults = {
-        ('header', 'left'): 'Made with amd2pdf',
-        ('footer', 'left'): 'https://github.com/tenuki/amd2pdf',
-        ('header', 'right'): '(sample)',
-        ('header', 'center'): '[title]',
-        ('footer', 'center'): "[page] of [topage]",
-    }
+    op_esc = lambda x: ('"%s"' % x) if not x.startswith('"') else x
+    defaults = {('header', 'left'): 'Made with amd2pdf',
+                ('footer', 'left'): 'https://github.com/tenuki/amd2pdf',
+                ('header', 'right'): '(sample)',
+                ('header', 'center'): '[title]',
+                ('footer', 'center'): "[page] of [topage]", }
+    opts = ['wkhtmltopdf', '--enable-internal-links',
+            '--disable-smart-shrinking', ]
+    opts = opts + ['-%s %s' % (margin, margins[page_format][margin]) for margin
+                   in 'TLRB']
+    opts = opts + ['--header-spacing %d' % int(
+                                 ((1.0 * inch_to_mm(margins[page_format]['T'])) / 3) + 0.5)]
+    opts = opts + ['--footer-spacing %d' % int(
+                                 ((1.0 * inch_to_mm(margins[page_format]['B'])) / 3) + 0.5)]
+    opts = opts + []
+    opts = opts + ['--page-size %s' % page_format]
 
-    opts = ['wkhtmltopdf',
-            '--page-size %s' % os.environ.get('PAGE', 'A4')]
     for hf in ['header', 'footer']:
         for lcr in ['left', 'center', 'right']:
             h = os.environ.get(('%s_%s' % (hf, lcr)).upper(),
@@ -179,28 +188,31 @@ def gen_html2pdf():
             if h is None:
                 continue
             opts.append('--%s-%s %s' % (hf, lcr, op_esc(h)))
-    return ' '.join(opts + ['- -'])
+    return ' '.join(opts + ['- ' + fname])
 
 
 def task_md2pdf(cfg):
-    yield cfg.TaskGen(
-            'node %s "%s"' % (os.path.join(mods_path, 'md2pdf.js'), TAG),
-            taskname='toc')
+    yield cfg.TaskGen('python -m markdown -x toc', taskname='toc')
+    yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.toc_to_dummy()"',
+                      taskname='toc_to_dummy')
+
     yield (wraphtml := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
                                    taskname='wrap'))
-    yield cfg.TaskGen(gen_html2pdf(), ext='pdf', ignorExecErrors=True)
-    yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image',
-                      ext='xml')
+
+    yield cfg.TaskGen(gen_html2pdf('%(targets)s'), ext='pdf', stdout=False,
+                      ignorExecErrors=True)
+
+    yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image', ext='xml')
     yield (
         xml2idx := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
                                taskname="xml2idx", ext='idx'))
-    yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.htmlpatch()" ' +
-                      xml2idx['targets'][0], taskname="htmlpatch",
-                      stdin=wraphtml)  # deps+=[wraphtml]
-    yield cfg.TaskGen(gen_html2pdf(), cfg.Final, taskname='html2pdf2',
-                      ext='pdf',
-                      ignorExecErrors=True)
+    yield cfg.TaskGen(
+        'python -c "import amd2pdf;amd2pdf.htmlpatch()" ' + xml2idx['targets'][
+            0], taskname="htmlpatch", stdin=wraphtml)  # deps+=[wraphtml]
+    yield cfg.TaskGen(gen_html2pdf('%(targets)s'), cfg.Final, stdout=False,
+                      taskname='html2pdf2', ext='pdf', ignorExecErrors=True)
 
     if cfg.autoopen:
-        yield cfg.TaskGen('python -c "import webbrowser;webbrowser.open(%r)"'
-                          % cfg.Final, taskname="openresult")
+        yield cfg.TaskGen(
+            'python -c "import webbrowser;webbrowser.open(%r)"' % cfg.Final,
+            taskname="openresult")

@@ -9,6 +9,7 @@ from bisect import bisect
 import jinja2
 from jinja2 import DictLoader
 
+from .toc_handler import proc_toc
 
 TEMPLATE_DATA = """<!DOCTYPE html><html>
 <head>
@@ -16,28 +17,31 @@ TEMPLATE_DATA = """<!DOCTYPE html><html>
 <title>{{title}}</title>
 {{head}}
 <style>{{CSS}}</style>
-    </head>
-    <body>
+</head>
+<body>
 {{body}}
-    </body>
-</html>
-"""
+</body>
+</html>"""
 
 
 def render_template(file_name, **context):
-    env = jinja2.Environment(loader=DictLoader({'template.html':TEMPLATE_DATA}))
-    tempalte = env.get_template(file_name)
-    result = tempalte.render(context)
+    env = jinja2.Environment(loader=DictLoader({'template.html':
+                                                TEMPLATE_DATA}))
+    template = env.get_template(file_name)
+    result = template.render(context)
     return result
+
 
 def fileread(filename):
     with open(filename, 'r') as f:
         return f.read()
 
+
 def fixcss(data):
     data = data.replace('.markdown-', '')
     data = data.replace('margin:auto;', '')
     return data
+
 
 def wrap():
     print('parsing...', file=sys.stderr)
@@ -91,6 +95,8 @@ def gettoc():
         if not TAG in line: continue
         m = fullRE.search(line)
         if m:
+            if '#' not in m.groups()[1]:
+                continue
             idx_nr, page_nr = int(m.groups()[0]), hash_link_to_idx(m.groups()[1])  # index
         else:
             # try get a link in the same page
@@ -153,6 +159,19 @@ def htmlpatch():
         lines += 1
 
     print('parse done. repl: %r, lines: %d' % (replacements, lines),
+          file=sys.stderr)
+
+
+def toc_to_dummy():
+    print('parsing...', file=sys.stderr)
+    _lines = []
+    for line in fileinput.input(files=('-',)):
+        _lines.append(line)
+
+    data = ''.join(_lines)
+    result = proc_toc(data)
+    sys.stdout.write(result.decode('utf-8'))
+    print('parse done. repl: %r, lines: %d' % (len(data), len(result)),
           file=sys.stderr)
 
 

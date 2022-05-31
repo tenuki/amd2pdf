@@ -82,7 +82,7 @@ Toc levels to include:
 * `TOC_INCLUDE_LEVEL` : json encoded levels array. Default is `[2, 3]` which
  makes ToC generator to include 2 and 3 headings in toc.
  
- Toc tag used in markdown is `[[TOC]]`.
+ Toc tag used in markdown is `[TOC]`.
 
 ## Examples
 

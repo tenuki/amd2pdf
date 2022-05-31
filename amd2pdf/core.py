@@ -42,7 +42,7 @@ class Config:
             fname = self.output_filename
         fullname = os.path.join(os.getcwd(), fname)
         if not os.path.isabs(fullname):
-            raise Exception("shouldn't happend")
+            raise Exception("shouldn't happen")
         return fullname
 
     @property
@@ -76,7 +76,7 @@ class Config:
     def link_tasks(self, task_gen):
         prev = self.Initial
         for task in task_gen:
-            if (not 'file_dep' in task) or (0 == len(task['file_dep'])):
+            if (not 'file_dep' in task) or ([] == task['file_dep']):
                 task['file_dep'] = reduce_deps([prev])
             yield task
             prev = task
@@ -191,25 +191,32 @@ def gen_html2pdf(fname):
     return ' '.join(opts + ['- ' + fname])
 
 
-def task_md2pdf(cfg):
-    yield cfg.TaskGen('python -m markdown -x toc', taskname='toc')
-    yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.toc_to_dummy()"',
-                      taskname='toc_to_dummy')
+def fast_check_for_toc(cfg):
+    with open(cfg.source, 'rb') as src:
+        data = src.read()
+    return b'[TOC]' in data
 
+
+def task_md2pdf(cfg):
+    TOC = fast_check_for_toc(cfg)
+
+    yield cfg.TaskGen('python -m markdown -x toc', taskname='toc')
+    if TOC:
+        yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.toc_to_dummy()"',
+                      taskname='toc_to_dummy')
     yield (wraphtml := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.wrap()"',
                                    taskname='wrap'))
 
     yield cfg.TaskGen(gen_html2pdf('%(targets)s'), ext='pdf', stdout=False,
                       ignorExecErrors=True)
 
-    yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image', ext='xml')
-    yield (
-        xml2idx := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
+    if TOC:
+        yield cfg.TaskGen('pdftohtml -stdout -xml -enc UTF-8 -i - image', ext='xml')
+        yield (xml2idx := cfg.TaskGen('python -c "import amd2pdf;amd2pdf.gettoc()" -',
                                taskname="xml2idx", ext='idx'))
-    yield cfg.TaskGen(
-        'python -c "import amd2pdf;amd2pdf.htmlpatch()" ' + xml2idx['targets'][
+        yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.htmlpatch()" ' + xml2idx['targets'][
             0], taskname="htmlpatch", stdin=wraphtml)  # deps+=[wraphtml]
-    yield cfg.TaskGen(gen_html2pdf('%(targets)s'), cfg.Final, stdout=False,
+        yield cfg.TaskGen(gen_html2pdf('%(targets)s'), cfg.Final, stdout=False,
                       taskname='html2pdf2', ext='pdf', ignorExecErrors=True)
 
     if cfg.autoopen:

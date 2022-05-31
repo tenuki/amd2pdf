@@ -105,7 +105,8 @@ body h1:hover a.anchor .octicon-link, body h2:hover a.anchor .octicon-link, body
 }
 
 body h1 tt, body h1 code, body h2 tt, body h2 code, body h3 tt, body h3 code, body h4 tt, body h4 code, body h5 tt, body h5 code, body h6 tt, body h6 code {
-    font-size: inherit
+    font-size: inherit;
+    overflow-x: hidden;
 }
 
 body h1 {
@@ -136,7 +137,8 @@ body h6 {
 }
 
 body p, body blockquote, body ul, body ol, body dl, body table, body pre {
-    margin: 15px 0
+    margin: 15px 0;
+    overflow-x: hidden;
 }
 
 body h1 tt, body h1 code, body h2 tt, body h2 code, body h3 tt, body h3 code, body h4 tt, body h4 code, body h5 tt, body h5 code, body h6 tt, body h6 code {
@@ -342,6 +344,7 @@ code, pre {
     hyphens: auto;
     word-wrap: break-word;
     overflow-wrap: break-word;
+    overflow-x: hidden;
 }
 
 body pre > code {
@@ -350,6 +353,7 @@ body pre > code {
     margin: 0;
     padding: 0;
     white-space: pre;
+    overflow-x: hidden;
 }
 
 body .highlight pre, body pre {
@@ -357,7 +361,7 @@ body .highlight pre, body pre {
     border: 1px solid #ddd;
     font-size: 13px;
     line-height: 19px;
-    overflow: auto;
+    overflow-x: hidden;
     padding: 6px 10px;
     border-radius: 3px
 }

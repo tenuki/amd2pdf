@@ -1,2 +1,3 @@
 doit
 jinja2
+Markdown==3.3.7

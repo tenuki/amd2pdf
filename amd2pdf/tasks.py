@@ -7,6 +7,7 @@ import sys
 from bisect import bisect
 
 import jinja2
+import markdown
 from jinja2 import DictLoader
 
 from .toc_handler import proc_toc
@@ -171,6 +172,19 @@ def toc_to_dummy():
     data = ''.join(_lines)
     result = proc_toc(data)
     sys.stdout.write(result.decode('utf-8'))
+    print('parse done. repl: %r, lines: %d' % (len(data), len(result)),
+          file=sys.stderr)
+
+
+def md2html():
+    print('parsing...', file=sys.stderr)
+    _lines = []
+    for line in fileinput.input(files=('-',)):
+        _lines.append(line)
+
+    data = ''.join(_lines)
+    result = markdown.markdown(data, extensions=['toc'])
+    sys.stdout.write(result)
     print('parse done. repl: %r, lines: %d' % (len(data), len(result)),
           file=sys.stderr)
 

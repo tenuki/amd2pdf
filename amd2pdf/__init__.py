@@ -6,7 +6,7 @@ from .cli import check_param, check_bool_param
 
 from .core import Config, task_md2pdf
 from .helpers import check_versions
-from .tasks import wrap, gettoc, htmlpatch, toc_to_dummy
+from .tasks import wrap, gettoc, htmlpatch, toc_to_dummy, md2html
 
 
 def run(filename, **kw):

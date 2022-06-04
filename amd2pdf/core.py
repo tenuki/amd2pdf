@@ -218,7 +218,9 @@ def fast_check_for_toc(cfg):
 
 def task_md2pdf(cfg):
     TOC = fast_check_for_toc(cfg)
-    yield cfg.TaskGen('python -m markdown -x toc', taskname='md2html')
+    #yield cfg.TaskGen('python -m markdown -x toc', taskname='md2html')
+    yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.md2html()"',
+                      taskname='md2html')
     if TOC:
         yield cfg.TaskGen('python -c "import amd2pdf;amd2pdf.toc_to_dummy()"',
                           taskname='toc_to_dummy')

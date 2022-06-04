@@ -12,7 +12,7 @@ default_style = os.path.join(rsrc_path, 'style.css')
 
 
 isWin = sys.platform == "win32"
-ShouldWrap = lambda filename: isWin and (' ' in filename)
+ShouldWrap = lambda filename: ' ' in filename
 W = lambda filename: '"%s"' % filename if ShouldWrap(filename) else filename
 
 

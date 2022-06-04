@@ -25,7 +25,7 @@ setup(
             # of the "mypkg" package, also:
             "amd2pdf": ["rsrc/*.css", "*.js"],
         },
-    install_requires=['doit', 'jinja2'],
+    install_requires=['doit', 'jinja2', 'Markdown'],
     python_requires='>=3',
     entry_points={
         'console_scripts': [

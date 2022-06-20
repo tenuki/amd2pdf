@@ -4,7 +4,9 @@ import json
 import os
 import re
 import sys
+import traceback
 from bisect import bisect
+from io import StringIO
 
 import jinja2
 import markdown
@@ -12,6 +14,8 @@ from jinja2 import DictLoader
 
 from .toc_handler import proc_toc
 
+
+__PATH = os.path.dirname(__file__)
 TEMPLATE_DATA = """<!DOCTYPE html><html>
 <head>
 <meta charset="utf-8" />
@@ -45,23 +49,25 @@ def fixcss(data):
 
 
 def wrap():
-    print('parsing...', file=sys.stderr)
-    linecnt = 0
-    lines = []
-    for line in fileinput.input(files=('-',)):
-        lines.append(line)
-        linecnt += 1
-    print('checking.....', file=sys.stderr)
-    print('keys:' + repr(list(os.environ.keys())), file=sys.stderr)
+    _input = ''.join(fileinput.input(files=('-',)))
+    ret = wrap_int({'wrap_input':_input, 'CSS_FILENAME': ['rsrc', 'style.css']})
+    print(ret)
+
+
+def wrap_int(input_dict):
+    _css_fname = input_dict['CSS_FILENAME']
+    if isinstance(_css_fname, list):
+        _css_fname = [__PATH] + _css_fname
+        _css_fname = os.path.join(*_css_fname)
+
     data = {
-        'CSS': fixcss(fileread(os.environ.get('CSS', 'style.css'))),
+        'CSS': fixcss(fileread(_css_fname)),
         'title': os.environ.get('TITLE', ''),
         'head': os.environ.get('HEAD', ''),
-        'body': ''.join(lines),
+        'body': input_dict['wrap_input'],
     }
-    sys.stdout.write(render_template('template.html', **data))
-    sys.stdout.flush()
-    print("CSS:"+os.environ.get('CSS', 'style.css'), file=sys.stderr)
+    output = render_template('template.html', **data)
+    return output
 
 
 
@@ -81,16 +87,15 @@ def _cmp(x, y):
 
 
 def gettoc():
-    #print('type: %s  (%d)' % (type(data), len(data)), file=sys.stderr)
-    # root = ET.fromstring(data)
-    # for x in root.findall(".//a"):
-    #     link = x.attrib.get('href')
-    #     if x.text==TAG and '#' in link:
-    #         #print(link, file=sys.stderr)
-    #         found.append(hash_link_to_idx(link))
+    _input = os.linesep.join(fileinput.input(files=(sys.argv[1],)))
+    ret = gettoc_int(_input)
+    print(repr(ret))
+
+
+def gettoc_int(_input):
     found = []
     linecnt = 1
-    for line in fileinput.input(files=(sys.argv[1],)):
+    for line in _input.splitlines():
         linecnt += 1
         line = line.strip()
         if not TAG in line: continue
@@ -107,7 +112,7 @@ def gettoc():
             else:
                 continue
         found.append( (idx_nr, page_nr) )
-        print('found:', found[-1], file=sys.stderr)
+        #print('found:', found[-1], file=sys.stderr)
 
     # fix Nones
     Nones = False
@@ -134,59 +139,59 @@ def gettoc():
     # now sort them
     cmpfunc = lambda x, y: _cmp(x[0],y[0]) if x[0]!=y[0] else _cmp(x[1],y[1])
     found.sort(reverse=True, key=functools.cmp_to_key(cmpfunc))
-    print('-->', repr(found), file=sys.stderr)
+    #print('-->', repr(found), file=sys.stderr)
     found = [y for x, y in found]
-    print('-->', repr(found), file=sys.stderr)
-    print(repr(found))
+    #print('-->', repr(found), file=sys.stderr)
     return found
 
 
 def htmlpatch():
-    print('opening: %s..' % sys.argv[1], file=sys.stderr)
-    with open(sys.argv[1], 'r') as f:
-        data = f.read()
-        print('parsing: %s' % repr(data), file=sys.stderr)
-        replacements = json.loads(data)
-        # replacements = json.load(f)
+    replacements = os.linesep.join(fileinput.input(files=(sys.argv[1],)))
+    _input = os.linesep.join(fileinput.input(files=('-',)))
+    ret = htmlpatch_int(_input, replacements)
+    print(ret)
 
-    print('parsing...', file=sys.stderr)
+
+def htmlpatch_int(_input, _replacements_json):
+    replacements = json.loads(_replacements_json)
     lines = 0
-    for line in fileinput.input(files=('-',)):
-        #print('stdin>' + line.rstrip(), file=sys.stderr)
+    output = StringIO()
+    for line in _input.splitlines():
         while replacements and (TAG in line):
             line_left, line_right = line.split(TAG, 1)
             line = line_left + str(replacements.pop(0)) + line_right
-        sys.stdout.write(line)
+        try:
+            output.write(line)
+        except:
+            print('line: %r'%line, file=sys.stderr)
+            print(len(line), file=sys.stderr)
+            traceback.print_exc(file=sys.stderr)
+            raise
         lines += 1
-
-    print('parse done. repl: %r, lines: %d' % (replacements, lines),
-          file=sys.stderr)
+    _output = output.getvalue()
+    return _output
 
 
 def toc_to_dummy():
-    print('parsing...', file=sys.stderr)
-    _lines = []
-    for line in fileinput.input(files=('-',)):
-        _lines.append(line)
+    _input = ''.join(fileinput.input(files=('-',)))
+    ret = toc_to_dummy_int(_input)
+    print(ret)
 
-    data = ''.join(_lines)
-    result = proc_toc(data)
-    sys.stdout.write(result.decode('utf-8'))
-    print('parse done. repl: %r, lines: %d' % (len(data), len(result)),
-          file=sys.stderr)
+
+def toc_to_dummy_int(input):
+    output = proc_toc(input).decode('utf-8')
+    return output
 
 
 def md2html():
-    print('parsing...', file=sys.stderr)
-    _lines = []
-    for line in fileinput.input(files=('-',)):
-        _lines.append(line)
+    _input = ''.join(fileinput.input(files=('-',)))
+    ret = md2htmlint(_input)
+    print(ret)
 
-    data = ''.join(_lines)
-    result = markdown.markdown(data, extensions=['toc'])
-    sys.stdout.write(result)
-    print('parse done. repl: %r, lines: %d' % (len(data), len(result)),
-          file=sys.stderr)
+
+def md2htmlint(input):
+    output = markdown.markdown(input, extensions=['toc'])
+    return output
 
 
 if __name__ == "__main__":

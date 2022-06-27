@@ -46,7 +46,7 @@ def main():
                 check_bool_param('-O', '--autoopen', 'autoopen'),
                 check_bool_param('-v', '--verbose', 'verbose'),
                 check_bool_param('-d', '--debug', 'debug'),
-                check_param('-c', '--css', 'css'),
+                check_param('-c', '--css', 'css_filename'),
                 check_param('-p', '--page', 'page'),
                 check_param('-t', '--title', 'title'),
                 check_param('-o', '--output', 'output_filename'),

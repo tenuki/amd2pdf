@@ -30,16 +30,16 @@ def GuessName(cmdline):
 
 
 class Config:
-    def __init__(self, source, verbose=False, debug=False, css=None, page=None,
-                 title=None, output_filename=None, autoopen=False):
+    def __init__(self, source, verbose=False, debug=False, css_filename=None,
+                 page=None, title=None, output_filename=None, autoopen=False):
         self.temp_dir = tempfile.mkdtemp(prefix='md2pdf-')
         self.debug = debug
         self.verbosity_level = 2 if verbose else 0
         self.source = source
         self.autoopen = autoopen
         self.output_filename = output_filename
-        self.params = {'css': css, 'page': page, 'title': title}
-        self.defaults = {'css': default_style, 'page': 'A4',
+        self.params = {'CSS_FILENAME': css_filename, 'page': page, 'title': title}
+        self.defaults = {'CSS_FILENAME': default_style, 'page': 'A4',
                          'title': os.environ.get('TITLE', '')}
 
     @property

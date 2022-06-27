@@ -50,18 +50,19 @@ def fixcss(data):
 
 def wrap():
     _input = ''.join(fileinput.input(files=('-',)))
-    ret = wrap_int({'wrap_input':_input, 'CSS_FILENAME': ['rsrc', 'style.css']})
+    ret = wrap_int({'wrap_input': _input})
     print(ret)
 
 
 def wrap_int(input_dict):
-    _css_fname = input_dict['CSS_FILENAME']
+    _css_fname = input_dict.get('CSS_FILENAME', os.environ.get('CSS_FILENAME'))
     if isinstance(_css_fname, list):
-        _css_fname = [__PATH] + _css_fname
         _css_fname = os.path.join(*_css_fname)
 
+    CSS = input_dict.get('CSS', os.environ.get('CSS',
+                                   fileread(_css_fname) if _css_fname else ''))
     data = {
-        'CSS': fixcss(fileread(_css_fname)),
+        'CSS': fixcss(CSS),
         'title': os.environ.get('TITLE', ''),
         'head': os.environ.get('HEAD', ''),
         'body': input_dict['wrap_input'],
@@ -72,14 +73,14 @@ def wrap_int(input_dict):
 
 
 TAG = 'iiiii'
-f = lambda x: ' ?'.join(x.split())
+_f = lambda x: ' ?'.join(x.split())
 
 text_left = r'<text top="([0-9]+)" left="[0-9]+" width="[0-9]+" height="[0-9]+" font="[0-9]+">'
 text_right = r'</text>'
 
-fullRE = re.compile(text_left + (r'<a href="([^"]*)">%s</a>'%f(TAG)) + text_right)
-currentRE = re.compile(text_left+f(TAG)+text_right)
-hash_link_to_idx = lambda link: int(link.split('#',1)[1])
+fullRE = re.compile(text_left + (r'<a href="([^"]*)">%s</a>' % _f(TAG)) + text_right)
+currentRE = re.compile(text_left+_f(TAG)+text_right)
+hash_link_to_idx = lambda link: int(link.split('#', 1)[1])
 
 
 def _cmp(x, y):

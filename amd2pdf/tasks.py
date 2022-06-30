@@ -13,6 +13,7 @@ import markdown
 from jinja2 import DictLoader
 
 from .toc_handler import proc_toc
+from .helpers import default_style
 
 
 __PATH = os.path.dirname(__file__)
@@ -61,6 +62,8 @@ def wrap_int(input_dict):
 
     CSS = input_dict.get('CSS', os.environ.get('CSS',
                                    fileread(_css_fname) if _css_fname else ''))
+    if CSS is None:
+        CSS = fileread(default_style)
     data = {
         'CSS': fixcss(CSS),
         'title': os.environ.get('TITLE', ''),
